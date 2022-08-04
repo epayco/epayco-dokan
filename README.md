@@ -5,7 +5,7 @@
 ** Se recomienda emplear la última versión disponible. **
 
 ## Versiones
-* [epayco plugin WooCommerce v1.0.0](https://github.com/epayco/epayco-dokan/releases/tag/V1.0.0).
+* [epayco plugin WooCommerce v1.0.0](https://github.com/epayco/epayco-dokan/releases/tag/1.0.0).
 
 ## Tabla de contenido
 

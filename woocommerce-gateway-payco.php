@@ -62,6 +62,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $this->title = $this->get_option('epayco_title');
                 $this->epayco_customerid = $this->get_option('epayco_customerid');
                 $this->epayco_secretkey = $this->get_option('epayco_secretkey');
+                $this->epayco_privatekey = $this->get_option('epayco_privatekey');
                 $this->epayco_publickey = $this->get_option('epayco_publickey');
                 $this->monto_maximo = $this->get_option('monto_maximo');
                 $this->max_monto = $this->get_option('monto_maximo');
@@ -765,7 +766,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     <br><small class="epayco-subtitle"> Si no se cargan automáticamente, de clic en el botón "Pagar con ePayco</small>';
                     $epaycoButtonImage =  plugin_dir_url(__FILE__).'lib/Boton-color-espanol.png';
                 }
-
+                $myIp=$this->getCustomerIp();
                 echo sprintf('
                         <div class="loader-container">
                             <div class="loading"></div>
@@ -781,7 +782,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             </a>
                         <form id="appGateway">
                             <script
-                               src="https://epayco-checkout-testing.s3.amazonaws.com/checkout.preprod.js?version=1643645084821">
+                               src="https://epayco-checkout-testing.s3.amazonaws.com/checkout.preprod.js">
                             </script>
                             <script>
                             var handler = ePayco.checkout.configure({
@@ -802,14 +803,16 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                 external: "%s",
                                 confirmation: "%s",
                                 response: "%s",
- 
                                 //Atributos cliente
                                 name_billing: "%s",
                                 address_billing: "%s",
                                 email_billing: "%s",
                                 mobilephone_billing: "%s",
+                                autoclick: "true",
+                                ip: "%s",
+                                test: "%s".toString(),
+                                extras_epayco:{extra5:"P51"}
                             }
-                        
                             let split = document.getElementById("split").textContent;
                             if(split == "true"){
                                 var js_array ='.json_encode($receiversInfo).';
@@ -832,13 +835,58 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                 data.split_rule= "multiple", // Parámetro para configuración de Split_receivers - debe de ir por defecto en multiple
                                 data.split_receivers= split_receivers
                             }
-                            
+                            const apiKey = "%s";
+                            const privateKey = "%s";
+                            var openNewChekout = function () {
+                                if(localStorage.getItem("invoicePayment") == null){
+                                    localStorage.setItem("invoicePayment", data.invoice);
+                                    makePayment(privateKey,apiKey,data, data.external == "true"?true:false)
+                                }else{
+                                    if(localStorage.getItem("invoicePayment") != data.invoice){
+                                        localStorage.removeItem("invoicePayment");
+                                        localStorage.setItem("invoicePayment", data.invoice);
+                                        makePayment(privateKey,apiKey,data, data.external == "true"?true:false)
+                                    }else{
+                                        makePayment(privateKey,apiKey,data, data.external == "true"?true:false)
+                                    }
+                                }
+                            }
+                            var makePayment = function (privatekey, apikey, info, external) {
+                                const headers = { "Content-Type": "application/json" } ;
+                                headers["privatekey"] = privatekey;
+                                headers["apikey"] = apikey;
+                                var payment =   function (){
+                                    return  fetch("https://cms.epayco.io/checkout/payment/session", {
+                                        method: "POST",
+                                        body: JSON.stringify(info),
+                                        headers
+                                    })
+                                        .then(res =>  res.json())
+                                        .catch(err => err);
+                                }
+                                payment()
+                                    .then(session => {
+                                        if(session.data.sessionId != undefined){
+                                            localStorage.removeItem("sessionPayment");
+                                            localStorage.setItem("sessionPayment", session.data.sessionId);
+                                            const handlerNew = window.ePayco.checkout.configure({
+                                                sessionId: session.data.sessionId,
+                                                external: external,
+                                            });
+                                            handlerNew.openNew()
+                                        }else{
+                                            handler.open(data)
+                                        }
+                                    })
+                                    .catch(error => {
+                                        error.message;
+                                    });
+                            }
                             var openChekout = function () {
-                              handler.open(data)
+                                openNewChekout()
                             }
                             var bntPagar = document.getElementById("btn_epayco");
                             bntPagar.addEventListener("click", openChekout);
-    
                             let responseUrl = document.getElementById("response").textContent;
                             handler.onCloseModal = function () {};
                             var isForceRedirect='.$force_redirect.';
@@ -850,8 +898,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                     window.location.href = responseUrl
                                 });
                             }
-
-                            setTimeout(openChekout, 2000)  
+                            openNewChekout()
                         </script>
                         </form>
                         </center>
@@ -873,9 +920,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     $address_billing,
                     $email_billing,
                     $phone_billing,
+                    $ip,
+                    $testMode,
                     $this->epayco_customerid,
                     $this->epayco_customerid,
-                    $this->epayco_customerid
+                    $this->epayco_customerid,
+                    trim($this->epayco_publickey),
+                    trim($this->epayco_privatekey)
                 );
             }
 
@@ -1532,6 +1583,26 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             }
 
+            public function getCustomerIp(){
+                $ipaddress = '';
+                if (isset($_SERVER['HTTP_CLIENT_IP']))
+                    $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+                else if(isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+                    $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                else if(isset($_SERVER['HTTP_X_FORWARDED']))
+                    $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+                else if(isset($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
+                    $ipaddress = $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
+                else if(isset($_SERVER['HTTP_FORWARDED_FOR']))
+                    $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+                else if(isset($_SERVER['HTTP_FORWARDED']))
+                    $ipaddress = $_SERVER['HTTP_FORWARDED'];
+                else if(isset($_SERVER['REMOTE_ADDR']))
+                    $ipaddress = $_SERVER['REMOTE_ADDR'];
+                else
+                    $ipaddress = 'UNKNOWN';
+                return $ipaddress;
+            }
 
             public function string_sanitize($string, $force_lowercase = true, $anal = false) {
 

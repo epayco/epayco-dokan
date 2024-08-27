@@ -43,15 +43,15 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     if($gestor){
                         while (($image = readdir($gestor)) !== false){
                             if($image != '.' && $image != '..'){
-                                if($image == "epayco.png"){
+                                if($image == "Mediodepago.png"){
                                     $this->icon = $url_icon."/".$image;;
                                 }
                             }
                         }
                     }
                 }
-                $this->method_title = __('ePayco Checkout Gateway', 'epayco_woocommerce');
-                $this->method_description = __('Acepta tarjetas de credito, depositos y transferencias.', 'epayco_woocommerce');
+                $this->method_title = __('Paga con epayco', 'epayco_woocommerce');
+                $this->method_description = __('ePayco: Paga con Tarjeta de crédito/débito nacional e internacional, PSE, Daviplata, Nequi, Paypal, Efectivo, Safetypay y muchos más.', 'epayco_woocommerce');
                 $this->order_button_text = __('Pagar', 'epayco_woocommerce');
                 $this->has_fields = false;
                 $this->supports = array('products');
@@ -444,7 +444,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                             if($gestor){
                                                 while (($image = readdir($gestor)) !== false){
                                                     if($image != '.' && $image != '..'){
-                                                        if($image == "epayco.png"){
+                                                        if($image == "Mediodepago.png"){
                                                             $image_ = $url_icon."/".$image;
                                                             echo "<img class='card-img-top' src='$image_' width='400px'/><br>";
                                                         }

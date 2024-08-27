@@ -43,15 +43,15 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     if($gestor){
                         while (($image = readdir($gestor)) !== false){
                             if($image != '.' && $image != '..'){
-                                if($image == "epayco.png"){
+                                if($image == "Mediodepago.png"){
                                     $this->icon = $url_icon."/".$image;;
                                 }
                             }
                         }
                     }
                 }
-                $this->method_title = __('ePayco Checkout Gateway', 'epayco_woocommerce');
-                $this->method_description = __('Acepta tarjetas de credito, depositos y transferencias.', 'epayco_woocommerce');
+                $this->method_title = __('Paga con epayco', 'epayco_woocommerce');
+                $this->method_description = __('ePayco: Paga con Tarjeta de crédito/débito nacional e internacional, PSE, Daviplata, Nequi, Paypal, Efectivo, Safetypay y muchos más.', 'epayco_woocommerce');
                 $this->order_button_text = __('Pagar', 'epayco_woocommerce');
                 $this->has_fields = false;
                 $this->supports = array('products');
@@ -62,8 +62,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 $this->title = $this->get_option('epayco_title');
                 $this->epayco_customerid = $this->get_option('epayco_customerid');
                 $this->epayco_secretkey = $this->get_option('epayco_secretkey');
-                $this->epayco_privatekey = $this->get_option('epayco_privatekey');
                 $this->epayco_publickey = $this->get_option('epayco_publickey');
+                $this->epayco_privatekey = $this->get_option('epayco_privatekey');
                 $this->monto_maximo = $this->get_option('monto_maximo');
                 $this->max_monto = $this->get_option('monto_maximo');
                 $this->description = $this->get_option('description');
@@ -444,7 +444,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                             if($gestor){
                                                 while (($image = readdir($gestor)) !== false){
                                                     if($image != '.' && $image != '..'){
-                                                        if($image == "epayco.png"){
+                                                        if($image == "Mediodepago.png"){
                                                             $image_ = $url_icon."/".$image;
                                                             echo "<img class='card-img-top' src='$image_' width='400px'/><br>";
                                                         }
@@ -767,6 +767,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     $epaycoButtonImage =  plugin_dir_url(__FILE__).'lib/Boton-color-espanol.png';
                 }
                 $myIp=$this->getCustomerIp();
+
                 echo sprintf('
                         <div class="loader-container">
                             <div class="loading"></div>
@@ -782,7 +783,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             </a>
                         <form id="appGateway">
                             <script
-                               src="https://epayco-checkout-testing.s3.amazonaws.com/checkout.preprod.js">
+                               src="https://checkout.epayco.co/checkout.js">
                             </script>
                             <script>
                             var handler = ePayco.checkout.configure({
@@ -803,15 +804,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                 external: "%s",
                                 confirmation: "%s",
                                 response: "%s",
-                                //Atributos cliente
                                 name_billing: "%s",
                                 address_billing: "%s",
                                 email_billing: "%s",
                                 mobilephone_billing: "%s",
-                                autoclick: "true",
-                                ip: "%s",
+                                extras_epayco:{extra5:"P51"},
                                 test: "%s".toString(),
-                                extras_epayco:{extra5:"P51"}
+                                ip: "%s"
                             }
                             let split = document.getElementById("split").textContent;
                             if(split == "true"){
@@ -856,7 +855,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                 headers["privatekey"] = privatekey;
                                 headers["apikey"] = apikey;
                                 var payment =   function (){
-                                    return  fetch("https://cms.epayco.io/checkout/payment/session", {
+                                    return  fetch("https://cms.epayco.co/checkout/payment/session", {
                                         method: "POST",
                                         body: JSON.stringify(info),
                                         headers
@@ -883,22 +882,12 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                     });
                             }
                             var openChekout = function () {
+                                //handler.open(data);
                                 openNewChekout()
                             }
                             var bntPagar = document.getElementById("btn_epayco");
                             bntPagar.addEventListener("click", openChekout);
-                            let responseUrl = document.getElementById("response").textContent;
-                            handler.onCloseModal = function () {};
-                            var isForceRedirect='.$force_redirect.';
-                            if(isForceRedirect == true){
-                                let responseUrl = document.getElementById("response").textContent;
-                                handler.onCreated(function(response) {
-                                }).onResponse(function(response) {
-                                }).onClosed(function(response) {
-                                    window.location.href = responseUrl
-                                });
-                            }
-                            openNewChekout()
+                    	    openChekout()
                         </script>
                         </form>
                         </center>
@@ -920,8 +909,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     $address_billing,
                     $email_billing,
                     $phone_billing,
-                    $ip,
                     $testMode,
+                    $myIp,
                     $this->epayco_customerid,
                     $this->epayco_customerid,
                     $this->epayco_customerid,
@@ -976,6 +965,27 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     wp_die( __("ePayco Request Failure", 'epayco-woocommerce') );
                 }
             }
+            
+            public function getCustomerIp(){
+                $ipaddress = '';
+                if (isset($_SERVER['HTTP_CLIENT_IP']))
+                    $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+                else if(isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+                    $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                else if(isset($_SERVER['HTTP_X_FORWARDED']))
+                    $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+                else if(isset($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
+                    $ipaddress = $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
+                else if(isset($_SERVER['HTTP_FORWARDED_FOR']))
+                    $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+                else if(isset($_SERVER['HTTP_FORWARDED']))
+                    $ipaddress = $_SERVER['HTTP_FORWARDED'];
+                else if(isset($_SERVER['REMOTE_ADDR']))
+                    $ipaddress = $_SERVER['REMOTE_ADDR'];
+                else
+                    $ipaddress = 'UNKNOWN';
+                return $ipaddress;
+            }
 
 
             /**
@@ -1013,7 +1023,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         $ref_payco=$explode[1];
                     }
 
-                    $url = 'https://secure.epayco.io/validation/v1/reference/'.$ref_payco;
+                    $url = 'https://secure.epayco.co/validation/v1/reference/'.$ref_payco;
                     $response = wp_remote_get(  $url );
                     $body = wp_remote_retrieve_body( $response );
                     $jsonData = @json_decode($body, true);
@@ -1498,7 +1508,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             {
                 $username = sanitize_text_field($validationData['epayco_publickey']);
                 $password = sanitize_text_field($validationData['epayco_privatey']);
-                $response = wp_remote_post( 'https://apify.epayco.io/login', array(
+                $response = wp_remote_post( 'https://apify.epayco.co/login', array(
                     'headers' => array(
                         'Authorization' => 'Basic ' . base64_encode( $username . ':' . $password ),
                     ),
@@ -1583,26 +1593,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             }
 
-            public function getCustomerIp(){
-                $ipaddress = '';
-                if (isset($_SERVER['HTTP_CLIENT_IP']))
-                    $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
-                else if(isset($_SERVER['HTTP_X_FORWARDED_FOR']))
-                    $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
-                else if(isset($_SERVER['HTTP_X_FORWARDED']))
-                    $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
-                else if(isset($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
-                    $ipaddress = $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
-                else if(isset($_SERVER['HTTP_FORWARDED_FOR']))
-                    $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
-                else if(isset($_SERVER['HTTP_FORWARDED']))
-                    $ipaddress = $_SERVER['HTTP_FORWARDED'];
-                else if(isset($_SERVER['REMOTE_ADDR']))
-                    $ipaddress = $_SERVER['REMOTE_ADDR'];
-                else
-                    $ipaddress = 'UNKNOWN';
-                return $ipaddress;
-            }
 
             public function string_sanitize($string, $force_lowercase = true, $anal = false) {
 

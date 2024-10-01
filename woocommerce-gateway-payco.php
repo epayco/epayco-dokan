@@ -36,21 +36,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             {
                 $this->id = 'epayco';
                 $this->version = '6.2.0';
-                $url_icon = plugin_dir_url(__FILE__)."lib";
-                $dir_ = __DIR__."/lib";
-                if(is_dir($dir_)) {
-                    $gestor = opendir($dir_);
-                    if($gestor){
-                        while (($image = readdir($gestor)) !== false){
-                            if($image != '.' && $image != '..'){
-                                if($image == "Mediodepago.png"){
-                                    $this->icon = $url_icon."/".$image;;
-                                }
-                            }
-                        }
-                    }
-                }
-                $this->method_title = __('Paga con epayco', 'epayco_woocommerce');
+                $this->icon = 'https://multimedia-epayco.s3.amazonaws.com/plugins-sdks/paymentLogo.svg';
+                $this->method_title = __('Paga con ePayco', 'epayco_woocommerce');
                 $this->method_description = __('ePayco: Paga con Tarjeta de crédito/débito nacional e internacional, PSE, Daviplata, Nequi, Paypal, Efectivo, Safetypay y muchos más.', 'epayco_woocommerce');
                 $this->order_button_text = __('Pagar', 'epayco_woocommerce');
                 $this->has_fields = false;
@@ -759,12 +746,12 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                 if ($this->epayco_lang !== "es") {
                     $msgEpaycoCheckout = '<span class="animated-points">Loading payment methods</span>
-                     <br><small class="epayco-subtitle"> If they do not load automatically, click on the "Pay with ePayco" button</small>';
-                    $epaycoButtonImage = plugin_dir_url(__FILE__).'lib/Boton-color-Ingles.png';
+                    <br><small class="epayco-subtitle"> If they do not load automatically, click on the "Pay with ePayco" button</small>';
+                    $epaycoButtonImage = 'https://multimedia-epayco.s3.amazonaws.com/plugins-sdks/Boton-color-Ingles.png';
                 }else{
                     $msgEpaycoCheckout = '<span class="animated-points">Cargando métodos de pago</span>
                     <br><small class="epayco-subtitle"> Si no se cargan automáticamente, de clic en el botón "Pagar con ePayco</small>';
-                    $epaycoButtonImage =  plugin_dir_url(__FILE__).'lib/Boton-color-espanol.png';
+                    $epaycoButtonImage = 'https://multimedia-epayco.s3.amazonaws.com/plugins-sdks/Boton-color-espanol.png';
                 }
                 $myIp=$this->getCustomerIp();
 
@@ -783,7 +770,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                             </a>
                         <form id="appGateway">
                             <script
-                              src="https://checkout.epayco.co/checkout.js">
+                              src="https://epayco-checkout-testing.s3.amazonaws.com/checkout.preprod.js">
                             </script>
                             <script>
                             var handler = ePayco.checkout.configure({
@@ -855,7 +842,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                                 headers["privatekey"] = privatekey;
                                 headers["apikey"] = apikey;
                                 var payment =   function (){
-                                    return  fetch("https://cms.epayco.co/checkout/payment/session", {
+                                    return  fetch("https://cms.epayco.io/checkout/payment/session", {
                                         method: "POST",
                                         body: JSON.stringify(info),
                                         headers
@@ -1023,7 +1010,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                         $ref_payco=$explode[1];
                     }
 
-                    $url = 'https://secure.epayco.co/validation/v1/reference/'.$ref_payco;
+                    $url = 'https://secure.epayco.io/validation/v1/reference/'.$ref_payco;
                     $response = wp_remote_get(  $url );
                     $body = wp_remote_retrieve_body( $response );
                     $jsonData = @json_decode($body, true);
@@ -1508,7 +1495,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             {
                 $username = sanitize_text_field($validationData['epayco_publickey']);
                 $password = sanitize_text_field($validationData['epayco_privatey']);
-                $response = wp_remote_post( 'https://apify.epayco.co/login', array(
+                $response = wp_remote_post( 'https://apify.epayco.io/login', array(
                     'headers' => array(
                         'Authorization' => 'Basic ' . base64_encode( $username . ':' . $password ),
                     ),
